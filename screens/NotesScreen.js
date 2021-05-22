@@ -9,8 +9,38 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
+const db = firebase.firestore().collection ("todos");
+
 export default function NotesScreen({ navigation, route }) {
   const [notes, setNotes] = useState([]);
+
+  //when screen loads, we start monitoring Firebase
+ // useEffect(() => {
+   // const unsubscribe = db.orderBy("created").onSnapshot((collection)=> {
+     // const updatedNotes = collection.docs.map((doc) => {
+        // create our own object that pulls the ID into a property
+       // const noteObject ={
+         // ...doc.data(),
+          //id: doc.id,
+        //};
+        //console.log(noteObject);
+        //return noteObject;
+      //});
+      //setNotes(updatedNotes);
+    //});
+
+    //return unsubscribe; //return the cleanup function
+  //}, []);
+
+//const newNote = {
+  //title: route.params.text,
+  //done:false, //no more id line!
+  //created: firebase.firestore.FieldValue.serverTimestamp(),
+  //alternative
+  //created: Date.now().toString(),
+//};
+//db.add(newNote);
+//}
 
   //firebase.firestore().collection("testing").add({
     //title: "Testing! Does this work??",
@@ -24,7 +54,7 @@ export default function NotesScreen({ navigation, route }) {
     .firestore()
     .collection("todos")
     .onSnapshot((collection)=> { // Let's get back a snapshot of this collection
-      const updatedNotes = collection.docs.map((doc) = doc.data());
+      const updatedNotes = collection.docs.map((doc) => doc.data());
       setNotes(updatedNotes); //And set our notes state array to its docs
   });
 
@@ -34,40 +64,7 @@ export default function NotesScreen({ navigation, route }) {
   };
 },[]);
 
-
-  // This is to set up the top right button
-  useEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <TouchableOpacity onPress={addNote}>
-          <Ionicons
-            name="ios-create-outline"
-            size={30}
-            color="black"
-            style={{
-              color: "#f55",
-              marginRight: 10,
-            }}
-          />
-        </TouchableOpacity>
-      ),
-    });
-  });
-
-  // Monitor route.params for changes and add items to the database
-  useEffect(() => {
-    if (route.params?.text) {
-      const newNote = {
-        title: route.params.text,
-        done: false,
-        id: notes.length.toString(),
-      };
-      firebase.firestore().collection("todos").add(newNote);
-      setNotes([...notes, newNote]);
-    }
-  }, [route.params?.text]);
-
-  function addNote() {
+  function addNote() { 
     navigation.navigate("Add Screen");
   }
 
@@ -75,7 +72,19 @@ export default function NotesScreen({ navigation, route }) {
   function deleteNote(id) {
     console.log("Deleting " + id);
     // To delete that item, we filter out the item we don't want
-    setNotes(notes.filter((item) => item.id !== id));
+    //setNotes(notes.filter((item) => item.id !== id)); 
+
+    db.doc(id).delete(); // this is much simpler now we have the Firestone ID
+
+
+    firebase
+    .firestore()
+    .collection ("todos")
+    .where("id", "==",id)
+    .get()
+    .then ((querySnapshot)=> {
+      querySnapshot.forEach((doc) => doc.ref.delete());
+    })
   }
 
   // The function to render each row in our FlatList
